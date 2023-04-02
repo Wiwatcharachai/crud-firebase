@@ -2,7 +2,7 @@ import React from 'react'
 import { AiOutlinePlus } from "react-icons/ai";
 import { useState, useEffect } from 'react';
 import Todo from './Todo';
-import { collection, onSnapshot, query, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, addDoc,deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 
@@ -19,9 +19,30 @@ const style ={
 
 function App() {
   // นำออกมาแสดง
-const [todos,Settodos] = useState([]);
+const [todos, setTodos] = useState([]);
+// พิมเข้ามา
+const [input, setInput] = useState('')
+console.log(input);
+
+
+
 
 //create todo
+const createTodo = async (e)=>{
+  e.preventDefault(e);
+
+  if(input === ''){
+    alert('Please type something before enter!')
+    return
+  }
+  await addDoc(collection(db, 'todos'), {
+    text: input,
+    completed: false,
+  })
+  setInput('');
+};
+
+
 //Read todo from firebase
 useEffect(()=>{
   const q = query(collection(db, 'todos'))
@@ -30,7 +51,7 @@ useEffect(()=>{
     querySnapshot.forEach((doc)=>{
       todosArr.push({...doc.data(), id: doc.id})
     });
-    Settodos(todosArr)
+    setTodos(todosArr)
   })
   return () => unsubscribe()
 },[]);
@@ -38,7 +59,6 @@ useEffect(()=>{
 
 
 //Update todo in firebase
-
 const toggleComplete = async (todo) => {
   await updateDoc(doc(db, 'todos', todo.id),{
   completed: !todo.completed
@@ -46,13 +66,19 @@ const toggleComplete = async (todo) => {
 }
 
 // Delete todo
+const deleteTodo = async (id) =>{
+  await deleteDoc(doc(db,'todos', id));
+};
+
+
+
 
   return (
     <div className={style.bg}>
     <div className={style.container}>
       <h3 className={style.heading}>Todo App</h3>
-      <form className={style.form}>
-        <input className={style.input} type='text' placeholder='Add Todo'/>
+      <form onSubmit={createTodo} className={style.form}>
+        <input onChange={(e)=>setInput(e.target.value)} className={style.input} type='text' placeholder='Add Todo'/>
         <button className={style.button}>
           <AiOutlinePlus size={30}/>
         </button>
@@ -60,10 +86,10 @@ const toggleComplete = async (todo) => {
       </form>
       <ul>
         {todos.map((item, index)=>(
-          <Todo key={index} todo={item} toggleComplete={toggleComplete}/>
+          <Todo key={index} todo={item} toggleComplete={toggleComplete} deleteTodo={deleteTodo}/>
         ))}
       </ul>
-      <p className={style.count}> You have 2 todos </p>
+      {todos.length < 1 ? null : <p className={style.count}> {`You have ${todos.length} todos`} </p> }
       </div>
     </div>
   )
